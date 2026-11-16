@@ -1,54 +1,21 @@
 package com.example.offlineplayer.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bedtime
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.QueueMusic
-import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.RepeatOne
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.unit.*
 import androidx.media3.common.Player
+import com.example.offlineplayer.ui.theme.Pink
+import com.example.offlineplayer.ui.theme.Violet
 import com.example.offlineplayer.viewmodel.PlayerViewModel
 import kotlinx.coroutines.delay
 
@@ -75,41 +42,59 @@ fun NowPlayingScreen(
             delay(1000)
         }
     }
+    val sleepActive = vm.sleepAfterSong || vm.sleepEndAt > now
     val sleepLabel = when {
         vm.sleepAfterSong -> "Setelah lagu ini"
         vm.sleepEndAt > now -> formatTime(vm.sleepEndAt - now)
         else -> "Timer tidur"
     }
-    val sleepActive = vm.sleepAfterSong || vm.sleepEndAt > now
 
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF3B2278), MaterialTheme.colorScheme.background),
+                    startY = 0f, endY = 1700f
+                )
+            )
+    ) {
         Column(
             Modifier
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 IconButton(onClick = onClose) {
                     Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Tutup", modifier = Modifier.size(32.dp))
                 }
                 Text(
-                    "Sedang diputar",
+                    "SEDANG DIPUTAR",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    color = dim
                 )
-                IconButton(onClick = onOpenQueue) {
-                    Icon(Icons.Filled.QueueMusic, contentDescription = "Antrian")
-                }
+                Spacer(Modifier.size(48.dp))
             }
 
-            Spacer(Modifier.height(16.dp))
-            AlbumArt(song, Modifier.fillMaxWidth().aspectRatio(1f))
             Spacer(Modifier.height(24.dp))
+            AlbumArt(
+                song,
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .shadow(24.dp, RoundedCornerShape(28.dp), ambientColor = Violet, spotColor = Pink),
+                corner = 28.dp
+            )
 
+            Spacer(Modifier.height(32.dp))
             Text(
                 song?.title ?: "-",
                 style = MaterialTheme.typography.titleLarge,
@@ -117,30 +102,40 @@ fun NowPlayingScreen(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
             )
+            Spacer(Modifier.height(4.dp))
             Text(
                 song?.artist ?: "",
+                style = MaterialTheme.typography.bodyLarge,
                 color = dim,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(20.dp))
             Slider(
                 value = shownPos,
                 onValueChange = { dragging = true; dragPos = it },
                 onValueChangeFinished = { vm.seekTo(dragPos.toLong()); dragging = false },
-                valueRange = 0f..maxMs
+                valueRange = 0f..maxMs,
+                colors = SliderDefaults.colors(
+                    thumbColor = primary,
+                    activeTrackColor = primary,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.18f)
+                )
             )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(formatTime(shownPos.toLong()), style = MaterialTheme.typography.bodySmall, color = dim)
                 Text(formatTime(vm.durationMs), style = MaterialTheme.typography.bodySmall, color = dim)
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
             Row(
                 Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { vm.toggleShuffle() }) {
@@ -154,13 +149,13 @@ fun NowPlayingScreen(
                 }
                 IconButton(
                     onClick = { vm.togglePlay() },
-                    modifier = Modifier.size(72.dp).background(Color.White, CircleShape)
+                    modifier = Modifier.size(76.dp).background(primary, CircleShape)
                 ) {
                     Icon(
                         if (vm.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = "Putar/jeda",
-                        tint = Color.Black,
-                        modifier = Modifier.size(40.dp)
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(42.dp)
                     )
                 }
                 IconButton(onClick = { vm.next() }, modifier = Modifier.size(56.dp)) {
@@ -175,16 +170,24 @@ fun NowPlayingScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            TextButton(onClick = onOpenSleep) {
-                Icon(
-                    Icons.Filled.Bedtime, contentDescription = null,
-                    tint = if (sleepActive) primary else dim
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(sleepLabel, color = if (sleepActive) primary else dim)
+            Spacer(Modifier.height(28.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FilledTonalButton(onClick = onOpenSleep, shape = CircleShape) {
+                    Icon(
+                        Icons.Filled.Bedtime, contentDescription = null,
+                        tint = if (sleepActive) primary else Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(sleepLabel, color = if (sleepActive) primary else Color.White)
+                }
+                FilledTonalButton(onClick = onOpenQueue, shape = CircleShape) {
+                    Icon(Icons.Filled.QueueMusic, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Antrian")
+                }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(28.dp))
         }
     }
 }

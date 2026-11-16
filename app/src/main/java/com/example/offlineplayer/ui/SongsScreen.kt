@@ -1,38 +1,28 @@
 package com.example.offlineplayer.ui
 
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.unit.*
 import com.example.offlineplayer.viewmodel.PlayerViewModel
 import com.example.offlineplayer.viewmodel.SortBy
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun appChipColors() = FilterChipDefaults.filterChipColors(
+    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+    labelColor = Color.White,
+    iconColor = Color.White,
+    selectedContainerColor = MaterialTheme.colorScheme.primary,
+    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,40 +34,49 @@ fun SongsScreen(vm: PlayerViewModel) {
     var artistMenu by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()) {
-        Text(
-            "Lagu",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 8.dp)
+        ScreenTitle(
+            title = "Lagu Kamu",
+            subtitle = if (vm.loading) "Memuat…" else "${vm.songs.size} lagu siap diputar"
         )
 
         OutlinedTextField(
             value = vm.query,
             onValueChange = { vm.query = it },
-            placeholder = { Text("Cari judul, artis, atau album") },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            placeholder = { Text("Cari judul, artis, atau album", color = Color.White.copy(alpha = 0.6f)) },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.8f)) },
             trailingIcon = {
                 if (vm.query.isNotEmpty()) {
                     IconButton(onClick = { vm.query = "" }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Hapus")
+                        Icon(Icons.Filled.Close, contentDescription = "Hapus", tint = Color.White)
                     }
                 }
             },
             singleLine = true,
-            shape = RoundedCornerShape(28.dp),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            shape = CircleShape,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color.Transparent,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            ),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
         )
 
         Row(
             Modifier
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 20.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Box {
                 FilterChip(
                     selected = false,
                     onClick = { sortMenu = true },
-                    label = { Text("Urut: ${vm.sortBy.label}") }
+                    label = { Text("Urut: ${vm.sortBy.label}") },
+                    shape = CircleShape,
+                    colors = appChipColors()
                 )
                 DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                     SortBy.values().forEach { option ->
@@ -92,7 +91,9 @@ fun SongsScreen(vm: PlayerViewModel) {
                 FilterChip(
                     selected = vm.artistFilter != null,
                     onClick = { artistMenu = true },
-                    label = { Text(vm.artistFilter ?: "Semua artis") }
+                    label = { Text(vm.artistFilter ?: "Semua artis", maxLines = 1) },
+                    shape = CircleShape,
+                    colors = appChipColors()
                 )
                 DropdownMenu(expanded = artistMenu, onDismissRequest = { artistMenu = false }) {
                     DropdownMenuItem(
@@ -110,7 +111,9 @@ fun SongsScreen(vm: PlayerViewModel) {
             FilterChip(
                 selected = vm.minOneMinute,
                 onClick = { vm.minOneMinute = !vm.minOneMinute },
-                label = { Text("Minimal 1 menit") }
+                label = { Text("Minimal 1 menit") },
+                shape = CircleShape,
+                colors = appChipColors()
             )
         }
 
@@ -118,19 +121,22 @@ fun SongsScreen(vm: PlayerViewModel) {
             vm.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-            vm.songs.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    "Tidak ada musik ditemukan di perangkat.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            vm.visibleSongs.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    "Tidak ada lagu yang cocok.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            vm.songs.isEmpty() -> EmptyState("Belum ada musik di perangkat ini.")
+            vm.visibleSongs.isEmpty() -> EmptyState("Tidak ada lagu yang cocok.")
             else -> SongList(vm.visibleSongs, vm)
         }
+    }
+}
+
+@Composable
+fun EmptyState(text: String) {
+    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.TopCenter) {
+        Text(
+            text,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.White.copy(alpha = 0.85f),
+            modifier = Modifier.padding(top = 48.dp)
+        )
     }
 }

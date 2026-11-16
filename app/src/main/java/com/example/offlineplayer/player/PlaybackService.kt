@@ -19,6 +19,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.media3.session.DefaultMediaNotificationProvider
+import com.example.offlineplayer.R
 
 class PlaybackService : MediaSessionService() {
 
@@ -94,6 +96,9 @@ class PlaybackService : MediaSessionService() {
         })
 
         session = MediaSession.Builder(this, exo).setCallback(callback).build()
+        setMediaNotificationProvider(
+            DefaultMediaNotificationProvider(this).apply { setSmallIcon(R.drawable.ic_snotif) }
+        )
     }
 
     private fun startTimer(minutes: Int) {
