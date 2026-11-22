@@ -1,9 +1,8 @@
 package com.example.offlineplayer.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -32,9 +31,47 @@ fun PlaylistsScreen(vm: PlayerViewModel) {
     var newName by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<UserPlaylist?>(null) }
 
-    val open = vm.playlists.firstOrNull { it.id == vm.openPlaylistId }
-
-    if (open == null) {
+    AnimatedContent(
+        targetState = vm.openPlaylistId,
+        transitionSpec = {
+            if (targetState != null) {
+                (slideInHorizontally(
+                    animationSpec = spring(
+                        dampingRatio = 0.85f,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    initialOffsetX = { it / 3 }
+                ) + fadeIn(animationSpec = tween(250))).togetherWith(
+                    slideOutHorizontally(
+                        animationSpec = spring(
+                            dampingRatio = 0.85f,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        targetOffsetX = { -it / 3 }
+                    ) + fadeOut(animationSpec = tween(180))
+                )
+            } else {
+                (slideInHorizontally(
+                    animationSpec = spring(
+                        dampingRatio = 0.85f,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    initialOffsetX = { -it / 3 }
+                ) + fadeIn(animationSpec = tween(250))).togetherWith(
+                    slideOutHorizontally(
+                        animationSpec = spring(
+                            dampingRatio = 0.85f,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        targetOffsetX = { it / 3 }
+                    ) + fadeOut(animationSpec = tween(180))
+                )
+            }
+        },
+        label = "playlistsNavigation"
+    ) { openId ->
+        val open = vm.playlists.firstOrNull { it.id == openId }
+        if (open == null) {
         Column(Modifier.fillMaxSize()) {
             ScreenTitle(
                 title = "Playlist",
@@ -391,6 +428,7 @@ fun PlaylistsScreen(vm: PlayerViewModel) {
                 }
             }
         }
+    }
     }
 
     // Dialog Pembuatan Playlist Baru

@@ -1,7 +1,7 @@
 package com.example.offlineplayer.ui
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -64,34 +64,47 @@ private fun FloatingNav(
                 val sel = i == selected
                 val itemShape = RoundedCornerShape(28.dp)
 
+                val weight by animateFloatAsState(
+                    targetValue = if (sel) 1.25f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = 0.8f,
+                        stiffness = Spring.StiffnessMediumLow
+                    ),
+                    label = "tabWeight"
+                )
+
                 val contentColor by animateColorAsState(
                     targetValue = if (sel) LiquidGreenLight else Color.White.copy(alpha = 0.52f),
-                    animationSpec = tween(durationMillis = 200),
+                    animationSpec = tween(durationMillis = 220),
                     label = "tabContentColor"
                 )
 
-                // Item menu dengan tema Liquid Glass Highlight saat aktif
+                val bgColor by animateColorAsState(
+                    targetValue = if (sel) Color(0x2B1ED760) else Color.Transparent,
+                    animationSpec = tween(durationMillis = 220),
+                    label = "tabBgColor"
+                )
+
+                val borderColor by animateColorAsState(
+                    targetValue = if (sel) LiquidGreen.copy(alpha = 0.70f) else Color.Transparent,
+                    animationSpec = tween(durationMillis = 220),
+                    label = "tabBorderColor"
+                )
+
                 Box(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(weight)
                         .clip(itemShape)
-                        .then(
-                            if (sel) {
-                                Modifier
-                                    .background(Color(0x2B1ED760)) // Translucent green glass highlight
-                                    .border(
-                                        1.dp,
-                                        Brush.horizontalGradient(
-                                            listOf(
-                                                LiquidGreen.copy(alpha = 0.75f),
-                                                Color.White.copy(alpha = 0.40f)
-                                            )
-                                        ),
-                                        itemShape
-                                    )
-                            } else {
-                                Modifier.background(Color.Transparent)
-                            }
+                        .background(bgColor)
+                        .border(
+                            1.dp,
+                            Brush.horizontalGradient(
+                                listOf(
+                                    borderColor,
+                                    if (sel) Color.White.copy(alpha = 0.35f) else Color.Transparent
+                                )
+                            ),
+                            itemShape
                         )
                         .clickable { onSelect(i) }
                         .padding(vertical = 11.dp),
@@ -107,15 +120,34 @@ private fun FloatingNav(
                             tint = contentColor,
                             modifier = Modifier.size(21.dp)
                         )
-                        if (sel) {
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = contentColor,
-                                maxLines = 1
+                        AnimatedVisibility(
+                            visible = sel,
+                            enter = fadeIn(animationSpec = tween(200, delayMillis = 30)) + expandHorizontally(
+                                animationSpec = spring(
+                                    dampingRatio = 0.8f,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                expandFrom = Alignment.Start
+                            ),
+                            exit = fadeOut(animationSpec = tween(120)) + shrinkHorizontally(
+                                animationSpec = spring(
+                                    dampingRatio = 0.8f,
+                                    stiffness = Spring.StiffnessMediumLow
+                                ),
+                                shrinkTowards = Alignment.Start
                             )
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = contentColor,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         }
                     }
                 }
@@ -142,16 +174,43 @@ fun AppNavigation(vm: PlayerViewModel = viewModel()) {
             .fillMaxSize()
             .background(DarkScreenGradient)
     ) {
-        // Konten Layar Utama
+        // Konten Layar Utama dengan animasi perpindahan tab halus
         Box(
             Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            when (tab) {
-                0 -> SongsScreen(vm)
-                1 -> FoldersScreen(vm)
-                else -> PlaylistsScreen(vm)
+            AnimatedContent(
+                targetState = tab,
+                transitionSpec = {
+                    val direction = if (targetState > initialState) 1 else -1
+                    (slideInHorizontally(
+                        animationSpec = spring(
+                            dampingRatio = 0.82f,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        initialOffsetX = { fullWidth -> direction * (fullWidth / 3) }
+                    ) + fadeIn(
+                        animationSpec = tween(280, easing = LinearOutSlowInEasing)
+                    )).togetherWith(
+                        slideOutHorizontally(
+                            animationSpec = spring(
+                                dampingRatio = 0.85f,
+                                stiffness = Spring.StiffnessMediumLow
+                            ),
+                            targetOffsetX = { fullWidth -> -direction * (fullWidth / 3) }
+                        ) + fadeOut(
+                            animationSpec = tween(200, easing = FastOutLinearInEasing)
+                        )
+                    )
+                },
+                label = "tabScreenContent"
+            ) { currentTab ->
+                when (currentTab) {
+                    0 -> SongsScreen(vm)
+                    1 -> FoldersScreen(vm)
+                    else -> PlaylistsScreen(vm)
+                }
             }
         }
 
@@ -162,8 +221,42 @@ fun AppNavigation(vm: PlayerViewModel = viewModel()) {
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                .animateContentSize(
+                    animationSpec = spring(
+                        dampingRatio = 0.82f,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                )
         ) {
-            MiniPlayer(vm) { showNow = true }
+            AnimatedVisibility(
+                visible = vm.currentSong != null,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = spring(
+                        dampingRatio = 0.82f,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeIn(animationSpec = tween(240)) + expandVertically(
+                    animationSpec = spring(
+                        dampingRatio = 0.82f,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = spring(
+                        dampingRatio = 0.85f,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeOut(animationSpec = tween(180)) + shrinkVertically(
+                    animationSpec = spring(
+                        dampingRatio = 0.85f,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                )
+            ) {
+                MiniPlayer(vm) { showNow = true }
+            }
             FloatingNav(tabs, tab) { tab = it }
             // Indikator Home Bar ala iPhone
             Spacer(Modifier.height(6.dp))
@@ -177,7 +270,24 @@ fun AppNavigation(vm: PlayerViewModel = viewModel()) {
             )
         }
 
-        if (showNow) {
+        // Layar Now Playing dengan animasi slide-up (besar/kecilkan bar halus tanpa ngejedak)
+        AnimatedVisibility(
+            visible = showNow,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = spring(
+                    dampingRatio = 0.82f,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeIn(animationSpec = tween(220)),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = spring(
+                    dampingRatio = 0.86f,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeOut(animationSpec = tween(180))
+        ) {
             NowPlayingScreen(
                 vm = vm,
                 onClose = { showNow = false },
@@ -185,7 +295,25 @@ fun AppNavigation(vm: PlayerViewModel = viewModel()) {
                 onOpenSleep = { showSleep = true }
             )
         }
-        if (showQueue) {
+
+        // Layar Antrian dengan animasi slide-up halus
+        AnimatedVisibility(
+            visible = showQueue,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = spring(
+                    dampingRatio = 0.82f,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeIn(animationSpec = tween(220)),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = spring(
+                    dampingRatio = 0.86f,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            ) + fadeOut(animationSpec = tween(180))
+        ) {
             QueueScreen(vm) { showQueue = false }
         }
     }

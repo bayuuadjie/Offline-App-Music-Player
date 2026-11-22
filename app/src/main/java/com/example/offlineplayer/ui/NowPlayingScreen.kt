@@ -1,7 +1,10 @@
 package com.example.offlineplayer.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
@@ -12,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
@@ -22,6 +26,7 @@ import com.example.offlineplayer.ui.theme.TextDim
 import com.example.offlineplayer.ui.theme.TextMuted
 import com.example.offlineplayer.viewmodel.PlayerViewModel
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @Composable
 fun NowPlayingScreen(
@@ -39,6 +44,27 @@ fun NowPlayingScreen(
     val maxMs = vm.durationMs.coerceAtLeast(1L).toFloat()
     val shownPos = if (dragging) dragPos else vm.positionMs.toFloat().coerceIn(0f, maxMs)
 
+    var isSwipingDown by remember { mutableStateOf(false) }
+    var swipeOffsetY by remember { mutableFloatStateOf(0f) }
+    val animatedOffsetY by animateFloatAsState(
+        targetValue = swipeOffsetY,
+        animationSpec = if (isSwipingDown) snap() else spring(
+            dampingRatio = 0.78f,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "nowPlayingSwipeOffset"
+    )
+
+    // Animasi skala album: membesar saat play, mengecil halus saat pause
+    val albumScale by animateFloatAsState(
+        targetValue = if (vm.isPlaying) 1f else 0.88f,
+        animationSpec = spring(
+            dampingRatio = 0.75f,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "albumArtScale"
+    )
+
     val now by produceState(System.currentTimeMillis()) {
         while (true) {
             value = System.currentTimeMillis()
@@ -55,6 +81,7 @@ fun NowPlayingScreen(
     Box(
         Modifier
             .fillMaxSize()
+            .offset { IntOffset(0, animatedOffsetY.roundToInt()) }
             .background(
                 Brush.verticalGradient(
                     listOf(
@@ -73,11 +100,50 @@ fun NowPlayingScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Drag Pill Handle ala iOS Bottom Sheet & gestur geser ke bawah untuk menutup bar
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragStart = { isSwipingDown = true },
+                            onDragEnd = {
+                                isSwipingDown = false
+                                if (swipeOffsetY > 160f) {
+                                    swipeOffsetY = 0f
+                                    onClose()
+                                } else {
+                                    swipeOffsetY = 0f
+                                }
+                            },
+                            onDragCancel = {
+                                isSwipingDown = false
+                                swipeOffsetY = 0f
+                            },
+                            onVerticalDrag = { _, dragAmount ->
+                                if (dragAmount > 0 || swipeOffsetY > 0) {
+                                    swipeOffsetY = (swipeOffsetY + dragAmount * 0.85f).coerceAtLeast(0f)
+                                }
+                            }
+                        )
+                    }
+                    .padding(top = 10.dp, bottom = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    Modifier
+                        .width(44.dp)
+                        .height(4.5.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.30f))
+                )
+            }
+
             // Header Top Bar
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 10.dp),
+                    .padding(top = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
@@ -109,12 +175,13 @@ fun NowPlayingScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Cover Album Liquid Glass
+            // Cover Album Liquid Glass dengan animasi skala saat play/pause
             AlbumArt(
                 song,
                 Modifier
                     .fillMaxWidth(0.88f)
                     .aspectRatio(1f)
+                    .scale(albumScale)
                     .shadow(
                         elevation = 28.dp,
                         shape = RoundedCornerShape(32.dp),
@@ -126,27 +193,51 @@ fun NowPlayingScreen(
 
             Spacer(Modifier.height(28.dp))
 
-            // Info Lagu
-            Text(
-                song?.title ?: "Tidak ada lagu",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                song?.artist ?: "",
-                style = MaterialTheme.typography.bodyLarge,
-                color = TextDim,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Info Lagu dengan transisi animasi saat ganti lagu
+            AnimatedContent(
+                targetState = song,
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(240)) + slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = 0.8f,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        initialOffsetY = { it / 3 }
+                    )).togetherWith(
+                        fadeOut(animationSpec = tween(150)) + slideOutVertically(
+                            animationSpec = tween(150),
+                            targetOffsetY = { -it / 3 }
+                        )
+                    )
+                },
+                label = "nowPlayingSongInfo"
+            ) { currentSong ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        currentSong?.title ?: "Tidak ada lagu",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        currentSong?.artist ?: "",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextDim,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
 
             Spacer(Modifier.height(22.dp))
 
@@ -210,7 +301,7 @@ fun NowPlayingScreen(
                     )
                 }
 
-                // Play / Pause Utama (Bulat Besar Hijau Liquid)
+                // Play / Pause Utama (Bulat Besar Hijau Liquid dengan transisi halus)
                 IconButton(
                     onClick = { vm.togglePlay() },
                     modifier = Modifier
@@ -218,12 +309,18 @@ fun NowPlayingScreen(
                         .shadow(16.dp, CircleShape, spotColor = LiquidGreen)
                         .background(primary, CircleShape)
                 ) {
-                    Icon(
-                        if (vm.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = "Putar/jeda",
-                        tint = Color(0xFF031408),
-                        modifier = Modifier.size(40.dp)
-                    )
+                    Crossfade(
+                        targetState = vm.isPlaying,
+                        animationSpec = tween(200),
+                        label = "nowPlayingPlayPauseCrossfade"
+                    ) { playing ->
+                        Icon(
+                            if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                            contentDescription = "Putar/jeda",
+                            tint = Color(0xFF031408),
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
                 }
 
                 IconButton(

@@ -1,5 +1,7 @@
 package com.example.offlineplayer.ui
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -54,38 +56,64 @@ fun MiniPlayer(vm: PlayerViewModel, onClick: () -> Unit) {
         ) {
             AlbumArt(song, Modifier.size(46.dp), corner = 14.dp)
             Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    song.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    song.artist,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = TextDim
-                )
+            AnimatedContent(
+                targetState = song,
+                modifier = Modifier.weight(1f),
+                transitionSpec = {
+                    (fadeIn(animationSpec = tween(220)) + slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = 0.8f,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        initialOffsetY = { it / 3 }
+                    )).togetherWith(
+                        fadeOut(animationSpec = tween(150)) + slideOutVertically(
+                            animationSpec = tween(150),
+                            targetOffsetY = { -it / 3 }
+                        )
+                    )
+                },
+                label = "miniPlayerSongInfo"
+            ) { currentSong ->
+                Column {
+                    Text(
+                        currentSong.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        currentSong.artist,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = TextDim
+                    )
+                }
             }
             Spacer(Modifier.width(8.dp))
-            // Play/Pause button bulat Liquid Green
+            // Play/Pause button bulat Liquid Green dengan transisi halus
             IconButton(
                 onClick = { vm.togglePlay() },
                 modifier = Modifier
                     .size(42.dp)
                     .background(LiquidGreen, CircleShape)
             ) {
-                Icon(
-                    if (vm.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = "Putar/jeda",
-                    tint = Color(0xFF031408),
-                    modifier = Modifier.size(24.dp)
-                )
+                Crossfade(
+                    targetState = vm.isPlaying,
+                    animationSpec = tween(200),
+                    label = "miniPlayerPlayPauseCrossfade"
+                ) { playing ->
+                    Icon(
+                        if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = "Putar/jeda",
+                        tint = Color(0xFF031408),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
             Spacer(Modifier.width(4.dp))
             IconButton(
@@ -100,8 +128,13 @@ fun MiniPlayer(vm: PlayerViewModel, onClick: () -> Unit) {
                 )
             }
         }
-        val fraction = if (vm.durationMs > 0)
+        val targetFraction = if (vm.durationMs > 0)
             (vm.positionMs.toFloat() / vm.durationMs).coerceIn(0f, 1f) else 0f
+        val animatedFraction by animateFloatAsState(
+            targetValue = targetFraction,
+            animationSpec = tween(durationMillis = 400, easing = LinearEasing),
+            label = "miniPlayerProgress"
+        )
         Box(
             Modifier
                 .padding(horizontal = 14.dp, vertical = 2.dp)
@@ -110,12 +143,14 @@ fun MiniPlayer(vm: PlayerViewModel, onClick: () -> Unit) {
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.12f))
         ) {
-            Box(
-                Modifier
-                    .fillMaxWidth(fraction)
-                    .fillMaxHeight()
-                    .background(AppGradient)
-            )
+            if (animatedFraction > 0.001f) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(animatedFraction)
+                        .fillMaxHeight()
+                        .background(AppGradient)
+                )
+            }
         }
         Spacer(Modifier.height(4.dp))
     }
