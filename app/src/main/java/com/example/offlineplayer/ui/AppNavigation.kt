@@ -1,5 +1,7 @@
 package com.example.offlineplayer.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -12,8 +14,12 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.offlineplayer.ui.theme.DarkScreenGradient
+import com.example.offlineplayer.ui.theme.LiquidGreen
+import com.example.offlineplayer.ui.theme.LiquidGreenLight
 import com.example.offlineplayer.viewmodel.PlayerViewModel
 
 @Composable
@@ -22,39 +28,96 @@ private fun FloatingNav(
     selected: Int,
     onSelect: (Int) -> Unit
 ) {
-    Row(
+    val barShape = RoundedCornerShape(36.dp)
+
+    // Floating Glass Dock Bar bergaya iPhone
+    Box(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(32.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(6.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        tabs.forEachIndexed { i, (label, icon) ->
-            val sel = i == selected
-            Row(
-                Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(if (sel) MaterialTheme.colorScheme.primary else Color.Transparent)
-                    .clickable { onSelect(i) }
-                    .padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    icon, contentDescription = label,
-                    tint = if (sel) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(22.dp)
-                )
-                if (sel) {
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onPrimary
+            .shadow(
+                elevation = 20.dp,
+                shape = barShape,
+                ambientColor = Color.Black,
+                spotColor = Color(0x401ED760)
+            )
+            .clip(barShape)
+            .background(Color(0xD90E1712)) // Dark Frosted Glass
+            .border(
+                1.dp,
+                Brush.linearGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.32f),
+                        LiquidGreen.copy(alpha = 0.22f),
+                        Color.White.copy(alpha = 0.08f)
                     )
+                ),
+                barShape
+            )
+            .padding(horizontal = 6.dp, vertical = 6.dp)
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEachIndexed { i, (label, icon) ->
+                val sel = i == selected
+                val itemShape = RoundedCornerShape(28.dp)
+
+                val contentColor by animateColorAsState(
+                    targetValue = if (sel) LiquidGreenLight else Color.White.copy(alpha = 0.52f),
+                    animationSpec = tween(durationMillis = 200),
+                    label = "tabContentColor"
+                )
+
+                // Item menu dengan tema Liquid Glass Highlight saat aktif
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(itemShape)
+                        .then(
+                            if (sel) {
+                                Modifier
+                                    .background(Color(0x2B1ED760)) // Translucent green glass highlight
+                                    .border(
+                                        1.dp,
+                                        Brush.horizontalGradient(
+                                            listOf(
+                                                LiquidGreen.copy(alpha = 0.75f),
+                                                Color.White.copy(alpha = 0.40f)
+                                            )
+                                        ),
+                                        itemShape
+                                    )
+                            } else {
+                                Modifier.background(Color.Transparent)
+                            }
+                        )
+                        .clickable { onSelect(i) }
+                        .padding(vertical = 11.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = label,
+                            tint = contentColor,
+                            modifier = Modifier.size(21.dp)
+                        )
+                        if (sel) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = contentColor,
+                                maxLines = 1
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -77,34 +140,41 @@ fun AppNavigation(vm: PlayerViewModel = viewModel()) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF2B1A55), MaterialTheme.colorScheme.background),
-                    startY = 0f, endY = 1300f
-                )
-            )
+            .background(DarkScreenGradient)
     ) {
-        Scaffold(
-            containerColor = Color.Transparent,
-            bottomBar = {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(start = 12.dp, end = 12.dp, bottom = 8.dp)
-                ) {
-                    MiniPlayer(vm) { showNow = true }
-                    FloatingNav(tabs, tab) { tab = it }
-                }
+        // Konten Layar Utama
+        Box(
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
+            when (tab) {
+                0 -> SongsScreen(vm)
+                1 -> FoldersScreen(vm)
+                else -> PlaylistsScreen(vm)
             }
-        ) { padding ->
-            Box(Modifier.padding(padding)) {
-                when (tab) {
-                    0 -> SongsScreen(vm)
-                    1 -> FoldersScreen(vm)
-                    else -> PlaylistsScreen(vm)
-                }
-            }
+        }
+
+        // Floating Bottom Controls ala iPhone (MiniPlayer + Floating Glass Dock + Home Bar)
+        Column(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+        ) {
+            MiniPlayer(vm) { showNow = true }
+            FloatingNav(tabs, tab) { tab = it }
+            // Indikator Home Bar ala iPhone
+            Spacer(Modifier.height(6.dp))
+            Box(
+                Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .width(110.dp)
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.22f))
+            )
         }
 
         if (showNow) {

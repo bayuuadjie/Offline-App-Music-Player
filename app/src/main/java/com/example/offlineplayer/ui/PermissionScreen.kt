@@ -18,9 +18,12 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
-import com.example.offlineplayer.ui.theme.AppGradient
+import com.example.offlineplayer.ui.theme.DarkScreenGradient
+import com.example.offlineplayer.ui.theme.LiquidGreen
+import com.example.offlineplayer.ui.theme.TextDim
 
 @Composable
 fun PermissionScreen(onGranted: () -> Unit) {
@@ -41,41 +44,68 @@ fun PermissionScreen(onGranted: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF3B2278), MaterialTheme.colorScheme.background),
-                    startY = 0f, endY = 1600f
-                )
-            )
+            .background(DarkScreenGradient)
     ) {
         Column(
-            Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 48.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 28.dp, vertical = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Glass Logo Tile
             Box(
-                Modifier.size(112.dp).clip(RoundedCornerShape(32.dp)).background(AppGradient),
+                Modifier
+                    .size(108.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0x33FFFFFF),
+                                Color(0x1F1ED760),
+                                Color(0x0FFFFFFF)
+                            )
+                        )
+                    )
+                    .border(
+                        1.dp,
+                        Brush.linearGradient(
+                            listOf(Color.White.copy(alpha = 0.4f), LiquidGreen.copy(alpha = 0.3f))
+                        ),
+                        RoundedCornerShape(32.dp)
+                    )
+                    .shadow(24.dp, RoundedCornerShape(32.dp), spotColor = LiquidGreen),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Filled.MusicNote, contentDescription = null,
-                    modifier = Modifier.size(56.dp), tint = Color.White
+                    Icons.Filled.MusicNote,
+                    contentDescription = null,
+                    modifier = Modifier.size(52.dp),
+                    tint = LiquidGreen
                 )
             }
+
             Spacer(Modifier.height(32.dp))
+
             Text(
-                "Musikmu, tanpa ribet",
+                "Musikmu, Kapan Saja",
                 style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = Color.White
             )
+
             Spacer(Modifier.height(12.dp))
+
             Text(
-                "Aplikasi ini hanya membaca file musik di perangkatmu. Tanpa internet, tanpa login, tanpa pelacakan.",
+                "Pemutar musik offline bertema Liquid Glass. Tanpa internet, tanpa iklan, dan tanpa pelacakan data.",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = TextDim
             )
-            Spacer(Modifier.height(32.dp))
+
+            Spacer(Modifier.height(36.dp))
+
             Button(
                 onClick = {
                     val perms = if (Build.VERSION.SDK_INT >= 33)
@@ -85,16 +115,29 @@ fun PermissionScreen(onGranted: () -> Unit) {
                     launcher.launch(perms)
                 },
                 shape = CircleShape,
-                modifier = Modifier.fillMaxWidth().height(54.dp)
-            ) { Text("Izinkan akses musik", style = MaterialTheme.typography.titleMedium) }
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LiquidGreen,
+                    contentColor = Color(0xFF031408)
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+            ) {
+                Text(
+                    "Izinkan Akses Musik",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
             if (denied) {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(18.dp))
                 Text(
-                    "Izin ditolak. Aktifkan izin Musik dan audio di pengaturan aplikasi.",
+                    "Izin belum diberikan. Aktifkan izin Musik di Pengaturan agar dapat memutar lagu.",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.error
+                    color = Color(0xFFFF5252)
                 )
                 TextButton(onClick = {
                     context.startActivity(
@@ -103,7 +146,9 @@ fun PermissionScreen(onGranted: () -> Unit) {
                             Uri.parse("package:${context.packageName}")
                         )
                     )
-                }) { Text("Buka pengaturan") }
+                }) {
+                    Text("Buka Pengaturan", color = LiquidGreen, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

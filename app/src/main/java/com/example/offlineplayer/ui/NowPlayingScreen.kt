@@ -5,17 +5,21 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import androidx.media3.common.Player
-import com.example.offlineplayer.ui.theme.Pink
-import com.example.offlineplayer.ui.theme.Violet
+import com.example.offlineplayer.ui.theme.LiquidGreen
+import com.example.offlineplayer.ui.theme.LiquidGreenLight
+import com.example.offlineplayer.ui.theme.TextDim
+import com.example.offlineplayer.ui.theme.TextMuted
 import com.example.offlineplayer.viewmodel.PlayerViewModel
 import kotlinx.coroutines.delay
 
@@ -28,8 +32,7 @@ fun NowPlayingScreen(
 ) {
     BackHandler(onBack = onClose)
     val song = vm.currentSong
-    val primary = MaterialTheme.colorScheme.primary
-    val dim = MaterialTheme.colorScheme.onSurfaceVariant
+    val primary = LiquidGreen
 
     var dragging by remember { mutableStateOf(false) }
     var dragPos by remember { mutableStateOf(0f) }
@@ -44,9 +47,9 @@ fun NowPlayingScreen(
     }
     val sleepActive = vm.sleepAfterSong || vm.sleepEndAt > now
     val sleepLabel = when {
-        vm.sleepAfterSong -> "Setelah lagu ini"
+        vm.sleepAfterSong -> "Selesai lagu ini"
         vm.sleepEndAt > now -> formatTime(vm.sleepEndAt - now)
-        else -> "Timer tidur"
+        else -> "Timer Tidur"
     }
 
     Box(
@@ -54,8 +57,11 @@ fun NowPlayingScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF3B2278), MaterialTheme.colorScheme.background),
-                    startY = 0f, endY = 1700f
+                    listOf(
+                        Color(0xFF132B1B), // Dark emerald ambient
+                        Color(0xFF09120D),
+                        Color(0xFF060907)
+                    )
                 )
             )
     ) {
@@ -64,75 +70,120 @@ fun NowPlayingScreen(
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 28.dp),
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Header Top Bar
             Row(
-                Modifier.fillMaxWidth().padding(top = 8.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Tutup", modifier = Modifier.size(32.dp))
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x22FFFFFF))
+                        .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                ) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowDown,
+                        contentDescription = "Tutup",
+                        tint = Color.White,
+                        modifier = Modifier.size(26.dp)
+                    )
                 }
                 Text(
                     "SEDANG DIPUTAR",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleSmall,
-                    color = dim
+                    fontWeight = FontWeight.Bold,
+                    color = TextDim,
+                    letterSpacing = 1.2.sp
                 )
-                Spacer(Modifier.size(48.dp))
+                Spacer(Modifier.size(40.dp))
             }
 
             Spacer(Modifier.height(24.dp))
+
+            // Cover Album Liquid Glass
             AlbumArt(
                 song,
                 Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(0.88f)
                     .aspectRatio(1f)
-                    .shadow(24.dp, RoundedCornerShape(28.dp), ambientColor = Violet, spotColor = Pink),
-                corner = 28.dp
+                    .shadow(
+                        elevation = 28.dp,
+                        shape = RoundedCornerShape(32.dp),
+                        ambientColor = Color.Black,
+                        spotColor = LiquidGreen.copy(alpha = 0.5f)
+                    ),
+                corner = 32.dp
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(28.dp))
+
+            // Info Lagu
             Text(
-                song?.title ?: "-",
+                song?.title ?: "Tidak ada lagu",
                 style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 song?.artist ?: "",
                 style = MaterialTheme.typography.bodyLarge,
-                color = dim,
+                color = TextDim,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(22.dp))
+
+            // Seekbar Slider Liquid Glass
             Slider(
                 value = shownPos,
                 onValueChange = { dragging = true; dragPos = it },
                 onValueChangeFinished = { vm.seekTo(dragPos.toLong()); dragging = false },
                 valueRange = 0f..maxMs,
                 colors = SliderDefaults.colors(
-                    thumbColor = primary,
+                    thumbColor = LiquidGreenLight,
                     activeTrackColor = primary,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.18f)
-                )
+                    inactiveTrackColor = Color.White.copy(alpha = 0.16f)
+                ),
+                modifier = Modifier.fillMaxWidth()
             )
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(formatTime(shownPos.toLong()), style = MaterialTheme.typography.bodySmall, color = dim)
-                Text(formatTime(vm.durationMs), style = MaterialTheme.typography.bodySmall, color = dim)
+                Text(
+                    formatTime(shownPos.toLong()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted
+                )
+                Text(
+                    formatTime(vm.durationMs),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted
+                )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
+
+            // Tombol Kontrol Pemutar
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -140,54 +191,123 @@ fun NowPlayingScreen(
             ) {
                 IconButton(onClick = { vm.toggleShuffle() }) {
                     Icon(
-                        Icons.Filled.Shuffle, contentDescription = "Acak",
-                        tint = if (vm.shuffleOn) primary else dim
+                        Icons.Filled.Shuffle,
+                        contentDescription = "Acak",
+                        tint = if (vm.shuffleOn) primary else TextMuted,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
-                IconButton(onClick = { vm.previous() }, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Filled.SkipPrevious, contentDescription = "Sebelumnya", modifier = Modifier.size(36.dp))
+
+                IconButton(
+                    onClick = { vm.previous() },
+                    modifier = Modifier.size(52.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.SkipPrevious,
+                        contentDescription = "Sebelumnya",
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp)
+                    )
                 }
+
+                // Play / Pause Utama (Bulat Besar Hijau Liquid)
                 IconButton(
                     onClick = { vm.togglePlay() },
-                    modifier = Modifier.size(76.dp).background(primary, CircleShape)
+                    modifier = Modifier
+                        .size(72.dp)
+                        .shadow(16.dp, CircleShape, spotColor = LiquidGreen)
+                        .background(primary, CircleShape)
                 ) {
                     Icon(
                         if (vm.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = "Putar/jeda",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(42.dp)
+                        tint = Color(0xFF031408),
+                        modifier = Modifier.size(40.dp)
                     )
                 }
-                IconButton(onClick = { vm.next() }, modifier = Modifier.size(56.dp)) {
-                    Icon(Icons.Filled.SkipNext, contentDescription = "Berikutnya", modifier = Modifier.size(36.dp))
+
+                IconButton(
+                    onClick = { vm.next() },
+                    modifier = Modifier.size(52.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.SkipNext,
+                        contentDescription = "Berikutnya",
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp)
+                    )
                 }
+
                 IconButton(onClick = { vm.cycleRepeat() }) {
                     Icon(
                         if (vm.repeatMode == Player.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
                         contentDescription = "Ulangi",
-                        tint = if (vm.repeatMode == Player.REPEAT_MODE_OFF) dim else primary
+                        tint = if (vm.repeatMode == Player.REPEAT_MODE_OFF) TextMuted else primary,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
             Spacer(Modifier.height(28.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(onClick = onOpenSleep, shape = CircleShape) {
+
+            // Tombol Pill Liquid Glass di bagian bawah (Sleep Timer & Queue)
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                // Sleep Timer Button
+                OutlinedButton(
+                    onClick = onOpenSleep,
+                    shape = CircleShape,
+                    border = BorderStroke(
+                        1.dp,
+                        if (sleepActive) LiquidGreen.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.25f)
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (sleepActive) Color(0x2E1ED760) else Color(0x1AFFFFFF),
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
+                ) {
                     Icon(
-                        Icons.Filled.Bedtime, contentDescription = null,
-                        tint = if (sleepActive) primary else Color.White,
-                        modifier = Modifier.size(20.dp)
+                        Icons.Filled.Bedtime,
+                        contentDescription = null,
+                        tint = if (sleepActive) LiquidGreen else Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(sleepLabel, color = if (sleepActive) primary else Color.White)
+                    Text(
+                        sleepLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (sleepActive) LiquidGreen else Color.White
+                    )
                 }
-                FilledTonalButton(onClick = onOpenQueue, shape = CircleShape) {
-                    Icon(Icons.Filled.QueueMusic, contentDescription = null, modifier = Modifier.size(20.dp))
+
+                // Queue Button
+                OutlinedButton(
+                    onClick = onOpenQueue,
+                    shape = CircleShape,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color(0x1AFFFFFF),
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.QueueMusic,
+                        contentDescription = null,
+                        tint = LiquidGreen,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Spacer(Modifier.width(8.dp))
-                    Text("Antrian")
+                    Text(
+                        "Antrian",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
-            Spacer(Modifier.height(28.dp))
+
+            Spacer(Modifier.height(32.dp))
         }
     }
 }

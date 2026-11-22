@@ -10,72 +10,113 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import com.example.offlineplayer.ui.theme.AppGradient
+import com.example.offlineplayer.ui.theme.LiquidGreen
+import com.example.offlineplayer.ui.theme.TextDim
 import com.example.offlineplayer.viewmodel.PlayerViewModel
 
 @Composable
 fun MiniPlayer(vm: PlayerViewModel, onClick: () -> Unit) {
     val song = vm.currentSong ?: return
-    Column {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.secondaryContainer)
-                .clickable(onClick = onClick)
+    val shape = RoundedCornerShape(24.dp)
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp)
+            .shadow(
+                elevation = 14.dp,
+                shape = shape,
+                ambientColor = Color.Black,
+                spotColor = Color(0x401ED760)
+            )
+            .clip(shape)
+            .background(Color(0xE0111A14))
+            .border(
+                1.dp,
+                Brush.linearGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.28f),
+                        Color(0xFF1ED760).copy(alpha = 0.22f),
+                        Color.White.copy(alpha = 0.08f)
+                    )
+                ),
+                shape
+            )
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            Modifier.padding(start = 10.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AlbumArt(song, Modifier.size(46.dp), corner = 12.dp)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        song.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(Modifier.height(1.dp))
-                    Text(
-                        song.artist,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                IconButton(
-                    onClick = { vm.togglePlay() },
-                    modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.primary, CircleShape)
-                ) {
-                    Icon(
-                        if (vm.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = "Putar/jeda",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-                IconButton(onClick = { vm.next() }) {
-                    Icon(Icons.Filled.SkipNext, contentDescription = "Berikutnya")
-                }
+            AlbumArt(song, Modifier.size(46.dp), corner = 14.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    song.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    song.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = TextDim
+                )
             }
-            val fraction = if (vm.durationMs > 0)
-                (vm.positionMs.toFloat() / vm.durationMs).coerceIn(0f, 1f) else 0f
-            Box(
-                Modifier
-                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.12f))
+            Spacer(Modifier.width(8.dp))
+            // Play/Pause button bulat Liquid Green
+            IconButton(
+                onClick = { vm.togglePlay() },
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(LiquidGreen, CircleShape)
             ) {
-                Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(AppGradient))
+                Icon(
+                    if (vm.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = "Putar/jeda",
+                    tint = Color(0xFF031408),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+            IconButton(
+                onClick = { vm.next() },
+                modifier = Modifier.size(38.dp)
+            ) {
+                Icon(
+                    Icons.Filled.SkipNext,
+                    contentDescription = "Berikutnya",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
-        Spacer(Modifier.height(8.dp))
+        val fraction = if (vm.durationMs > 0)
+            (vm.positionMs.toFloat() / vm.durationMs).coerceIn(0f, 1f) else 0f
+        Box(
+            Modifier
+                .padding(horizontal = 14.dp, vertical = 2.dp)
+                .fillMaxWidth()
+                .height(2.5.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.12f))
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth(fraction)
+                    .fillMaxHeight()
+                    .background(AppGradient)
+            )
+        }
+        Spacer(Modifier.height(4.dp))
     }
 }
